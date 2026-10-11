@@ -303,7 +303,16 @@ function DownloadGate() {
           <div className="block sm:hidden">
             <AdPlaceholder
               html={`
-                <!-- 👇 PEGA AQUÍ EL CÓDIGO DEL BANNER 320x50 -->
+                <script>
+                  atOptions = {
+                    'key' : 'bdd3f78d6ea8e4fac01ff84746cc3b15',
+                    'format' : 'iframe',
+                    'height' : 50,
+                    'width' : 320,
+                    'params' : {}
+                  };
+                </script>
+                <script src="https://www.highrevenueformat.com/bdd3f78d6ea8e4fac01ff84746cc3b15/invoke.js"></script>
               `}
               className="min-h-[50px]"
             />
@@ -313,13 +322,31 @@ function DownloadGate() {
           <div className="grid grid-cols-2 gap-4">
             <AdPlaceholder
               html={`
-                <!-- 👇 PEGA AQUÍ EL CÓDIGO DEL BANNER 300x250 #1 -->
+                <script>
+                  atOptions = {
+                    'key' : '80ec449e7c42aa2311e02cf68e5c6c32',
+                    'format' : 'iframe',
+                    'height' : 250,
+                    'width' : 300,
+                    'params' : {}
+                  };
+                </script>
+                <script src="https://www.highrevenueformat.com/80ec449e7c42aa2311e02cf68e5c6c32/invoke.js"></script>
               `}
               className="min-h-[250px]"
             />
             <AdPlaceholder
               html={`
-                <!-- 👇 PEGA AQUÍ EL CÓDIGO DEL BANNER 300x250 #2 -->
+                <script>
+                  atOptions = {
+                    'key' : '80ec449e7c42aa2311e02cf68e5c6c32',
+                    'format' : 'iframe',
+                    'height' : 250,
+                    'width' : 300,
+                    'params' : {}
+                  };
+                </script>
+                <script src="https://www.highrevenueformat.com/80ec449e7c42aa2311e02cf68e5c6c32/invoke.js"></script>
               `}
               className="min-h-[250px]"
             />
