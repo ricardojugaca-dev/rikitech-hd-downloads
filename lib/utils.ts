@@ -25,6 +25,7 @@ export const ALLOWED_DOMAINS: string[] = [
   "uploadhaven.com",
   "anonfiles.com",
   "solidfiles.com",
+  "infinityfree.me",   // 👈 AÑADE ESTA LÍNEA
 ];
 
 /**
