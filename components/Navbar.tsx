@@ -3,6 +3,7 @@
 // =============================================================
 
 import Link from "next/link";
+import Image from "next/image";
 
 const SOCIALS = [
   {
@@ -49,17 +50,29 @@ const SOCIALS = [
 
 export default function Navbar() {
   return (
-    <header className="w-full border-b border-neutral-900 bg-neutral-950/60 backdrop-blur-md sticky top-0 z-50">
+    <header className="w-full border-b border-neutral-800 bg-neutral-900/40 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-5xl mx-auto flex items-center justify-between gap-4 px-4 py-3">
-        {/* Logo + Nombre */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-600/30 group-hover:scale-105 transition-transform">
-            R
-          </div>
-          <span className="text-sm font-bold text-white tracking-tight">
-            RikiTech<span className="text-blue-500">HD</span>
-          </span>
-        </Link>
+        {/* Logo + Nombre (enlace a tu sitio principal) */}
+            <a
+              href="https://rikitech-hd.vercel.app/"
+              className="flex items-center gap-2.5 group transition-opacity hover:opacity-80"
+              title="Ir a RikiTechHD"
+              aria-label="Ir a RikiTechHD"
+            >
+              {/* Logo con círculo blanco */}
+              <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-md shadow-blue-600/20 group-hover:scale-105 transition-transform">
+                <Image
+                  src="/Logo.png"
+                  alt="RikiTechHD"
+                  width={30}
+                  height={30}
+                  className="rounded-full object-contain"
+                />
+              </div>
+              <span className="text-sm font-bold text-white tracking-tight group-hover:text-blue-400 transition-colors">
+                RikiTech<span className="text-blue-500">HD</span>
+              </span>
+            </a>
 
         {/* Redes sociales */}
         <nav className="flex items-center gap-1">

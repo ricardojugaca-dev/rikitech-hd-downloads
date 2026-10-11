@@ -5,24 +5,24 @@ import Link from "next/link";
 // Cambia los títulos y las URLs por artículos reales de tu sitio.
 // =============================================================
 
-const POSTS = [
-  {
-    title: "Cómo descargar e instalar Windows 11 paso a paso",
-    href: "https://rikitechhd.vercel.app",
-  },
-  {
-    title: "Los 10 mejores programas gratis para tu PC en 2025",
-    href: "https://rikitechhd.vercel.app",
-  },
-  {
-    title: "Guía completa: instalar Office sin errores",
-    href: "https://rikitechhd.vercel.app",
-  },
-  {
-    title: "Cómo acelerar tu PC sin formatear (trucos reales)",
-    href: "https://rikitechhd.vercel.app",
-  },
-];
+  const POSTS = [
+    {
+      title: "Los 10 mejores programas gratis para tu PC en 2026",
+      href: "https://rikitech-hd.vercel.app/software/ccleaner",
+    },
+    {
+      title: "Cómo acelerar tu PC sin formatear (trucos reales)",
+      href: "https://rikitech-hd.vercel.app/software/advanced-systemcare",
+    },
+    {
+      title: "Guía completa: instalar Office 2024 sin errores",
+      href: "https://rikitech-hd.vercel.app/software/microsoft-office-2024",
+    },
+    {
+      title: "Cómo descargar e instalar el mejor reproductor multimedia",
+      href: "https://rikitech-hd.vercel.app/software/vlc",
+    },
+  ];
 
 export default function InterestingPosts() {
   return (

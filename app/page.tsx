@@ -128,7 +128,7 @@ function DownloadGate() {
      <Navbar />
       {/* ======================= TARJETA CENTRAL ======================= */}
       <section className="flex-1 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-xl rounded-2xl border border-neutral-800 bg-neutral-950/70 backdrop-blur-sm p-6 sm:p-10 shadow-2xl shadow-black/40">
+        <div className="w-full max-w-xl rounded-2xl border border-neutral-800 bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900 p-6 sm:p-10 shadow-2xl shadow-black/40">
          {/* Logo con círculo blanco compacto */}
             <div className="flex justify-center mb-6">
               <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-md shadow-blue-600/20">
