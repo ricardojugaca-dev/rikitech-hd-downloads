@@ -47,15 +47,11 @@ function DownloadGate() {
   useEffect(() => {
     // 🧪 MODO DESARROLLO: si estamos en local sin ?url=, usamos una URL de prueba
     const isDev = typeof window !== "undefined" && window.location.hostname === "localhost";
-    
+
+    // Siempre 10 segundos
+    const duration = FULL_DURATION;
+
     if (!rawUrl && isDev) {
-      // En desarrollo, mostramos el contador igual con una URL de prueba
-      let duration = FULL_DURATION;
-      try {
-        if (localStorage.getItem(VISITED_KEY) === "1") {
-          duration = SHORT_DURATION;
-        }
-      } catch {}
       setTotal(duration);
       setRemaining(duration);
       setReady(true);
@@ -71,48 +67,40 @@ function DownloadGate() {
       return () => clearTimeout(t);
     }
 
-    // Si el usuario ya pasó por aquí antes, reducimos la espera
-    let duration = FULL_DURATION;
-    try {
-      if (localStorage.getItem(VISITED_KEY) === "1") {
-        duration = SHORT_DURATION;
-      }
-    } catch {}
-
     setTotal(duration);
     setRemaining(duration);
     setReady(true);
   }, [rawUrl]);
 
-  // --- 2. Lógica de la cuenta regresiva ---
-  useEffect(() => {
-    if (!ready || invalid || done) return;
+    // --- 2. Lógica de la cuenta regresiva ---
+    useEffect(() => {
+      if (!ready || invalid || done) return;
 
-    if (remaining <= 0) {
-      setDone(true);
-      // Marcamos al usuario como "ya visitó" para futuras visitas
-      try {
-        localStorage.setItem(VISITED_KEY, "1");
-      } catch {}
-      return;
-    }
+      if (remaining <= 0) {
+        setDone(true);
+        // Marcamos al usuario como "ya visitó" para futuras visitas
+        try {
+          localStorage.setItem(VISITED_KEY, "1");
+        } catch {}
+        return;
+      }
 
-    const timer = setTimeout(() => {
-      setRemaining((r) => r - 1);
-    }, 1000);
+      const timer = setTimeout(() => {
+        setRemaining((r) => r - 1);
+      }, 1000);
 
-    return () => clearTimeout(timer);
-  }, [ready, invalid, done, remaining]);
+      return () => clearTimeout(timer);
+    }, [ready, invalid, done, remaining]);
 
-  // --- 3. Acción del botón "Continuar" ---
-    const handleContinue = useCallback(() => {
-    // En modo desarrollo sin URL, mostramos una alerta
-    if (!rawUrl) {
-      alert("🧪 Modo desarrollo: aquí iría la URL real de descarga.");
-      return;
-    }
-    window.location.href = rawUrl;
-  }, [rawUrl]);
+    // --- 3. Acción del botón "Continuar" ---
+      const handleContinue = useCallback(() => {
+      // En modo desarrollo sin URL, mostramos una alerta
+      if (!rawUrl) {
+        alert("🧪 Modo desarrollo: aquí iría la URL real de descarga.");
+        return;
+      }
+      window.location.href = rawUrl;
+    }, [rawUrl]);
 
   // --- 4. Render: URL inválida ---
   if (invalid) {
@@ -141,16 +129,18 @@ function DownloadGate() {
       {/* ======================= TARJETA CENTRAL ======================= */}
       <section className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-xl rounded-2xl border border-neutral-800 bg-neutral-950/70 backdrop-blur-sm p-6 sm:p-10 shadow-2xl shadow-black/40">
-          {/* Logo */}
-          <div className="flex justify-center mb-6">
-            <Image
-              src="/Logo.png"
-              alt="RikiTechHD"
-              width={56}
-              height={56}
-              className="rounded-xl"
-            />
-          </div>
+         {/* Logo con círculo blanco compacto */}
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-md shadow-blue-600/20">
+                <Image
+                  src="/Logo.png"
+                  alt="RikiTechHD"
+                  width={52}
+                  height={52}
+                  className="rounded-full object-contain"
+                />
+              </div>
+            </div>
 
           {/* Título y subtítulo */}
           <h1 className="text-center text-2xl sm:text-3xl font-semibold text-white mb-2">
@@ -272,14 +262,14 @@ function DownloadGate() {
       </section>
 
       {/* ======================= ANUNCIOS ======================= */}
-        <section className="w-full max-w-md mx-auto px-4 pb-8 space-y-4">
-          {/* Anuncio 1: Native Banner (arriba) */}
+        <section className="w-full max-w-4xl mx-auto px-4 pb-8 space-y-4">
+          {/* Anuncio 1: Native Banner */}
           <AdPlaceholder
             html={`
               <script async="async" data-cfasync="false" src="https://pl31767627.profitableratecpmnetwork.com/4c4c564fe15ccb1e3c16319487c38cd6/invoke.js"></script>
-                <div id="container-4c4c564fe15ccb1e3c16319487c38cd6"></div>
+              <div id="container-4c4c564fe15ccb1e3c16319487c38cd6"></div>
             `}
-            className="min-h-[90px]"
+            className="min-h-[100px]"
           />
 
           {/* Anuncio 2: Banner 728x90 (Desktop) / 320x50 (Móvil) */}
@@ -287,15 +277,15 @@ function DownloadGate() {
             <AdPlaceholder
               html={`
                 <script>
-                atOptions = {
-                  'key' : '3f3848307050e98545d969ecca6d3955',
-                  'format' : 'iframe',
-                  'height' : 90,
-                  'width' : 728,
-                  'params' : {}
-                };
-              </script>
-              <script src="https://www.highrevenueformat.com/3f3848307050e98545d969ecca6d3955/invoke.js"></script>
+                  atOptions = {
+                    'key' : '3f3848307050e98545d969ecca6d3955',
+                    'format' : 'iframe',
+                    'height' : 90,
+                    'width' : 728,
+                    'params' : {}
+                  };
+                </script>
+                <script src="https://www.highrevenueformat.com/3f3848307050e98545d969ecca6d3955/invoke.js"></script>
               `}
               className="min-h-[90px]"
             />
@@ -318,8 +308,8 @@ function DownloadGate() {
             />
           </div>
 
-          {/* Anuncios 3 y 4: dos banners 300x250 lado a lado */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Anuncios 3 y 4: dos banners 300x250 (uno por fila en móvil) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <AdPlaceholder
               html={`
                 <script>
