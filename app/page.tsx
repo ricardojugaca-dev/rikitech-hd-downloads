@@ -1,4 +1,6 @@
 "use client";
+import Image from "next/image";
+import Navbar from "@/components/Navbar";
 
 // =============================================================
 // Página principal de la puerta de descarga
@@ -19,8 +21,6 @@ import Footer from "@/components/Footer";
 import {
   MAIN_SITE_URL,
   VISITED_KEY,
-  formatNumber,
-  getDomain,
   isValidDownloadUrl,
 } from "@/lib/utils";
 
@@ -28,8 +28,6 @@ import {
 const FULL_DURATION = 10;
 const SHORT_DURATION = 3;
 
-// Contador de descargas (marcador de posición hasta que tengas uno real)
-const FAKE_TODAY_DOWNLOADS = 12483;
 
 // -------------------------------------------------------------
 // Componente interno (usa useSearchParams → necesita Suspense)
@@ -47,6 +45,23 @@ function DownloadGate() {
 
   // --- 1. Validación inicial + duración dinámica ---
   useEffect(() => {
+    // 🧪 MODO DESARROLLO: si estamos en local sin ?url=, usamos una URL de prueba
+    const isDev = typeof window !== "undefined" && window.location.hostname === "localhost";
+    
+    if (!rawUrl && isDev) {
+      // En desarrollo, mostramos el contador igual con una URL de prueba
+      let duration = FULL_DURATION;
+      try {
+        if (localStorage.getItem(VISITED_KEY) === "1") {
+          duration = SHORT_DURATION;
+        }
+      } catch {}
+      setTotal(duration);
+      setRemaining(duration);
+      setReady(true);
+      return;
+    }
+
     // Si la URL no es válida o no está permitida → redirigimos al sitio principal
     if (!isValidDownloadUrl(rawUrl)) {
       setInvalid(true);
@@ -62,9 +77,7 @@ function DownloadGate() {
       if (localStorage.getItem(VISITED_KEY) === "1") {
         duration = SHORT_DURATION;
       }
-    } catch {
-      // localStorage puede fallar en modo incógnito estricto; lo ignoramos
-    }
+    } catch {}
 
     setTotal(duration);
     setRemaining(duration);
@@ -92,8 +105,12 @@ function DownloadGate() {
   }, [ready, invalid, done, remaining]);
 
   // --- 3. Acción del botón "Continuar" ---
-  const handleContinue = useCallback(() => {
-    if (!rawUrl) return;
+    const handleContinue = useCallback(() => {
+    // En modo desarrollo sin URL, mostramos una alerta
+    if (!rawUrl) {
+      alert("🧪 Modo desarrollo: aquí iría la URL real de descarga.");
+      return;
+    }
     window.location.href = rawUrl;
   }, [rawUrl]);
 
@@ -120,14 +137,19 @@ function DownloadGate() {
   // --- 5. Render principal ---
   return (
     <main className="min-h-screen flex flex-col">
+     <Navbar />
       {/* ======================= TARJETA CENTRAL ======================= */}
       <section className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-xl rounded-2xl border border-neutral-800 bg-neutral-950/70 backdrop-blur-sm p-6 sm:p-10 shadow-2xl shadow-black/40">
-          {/* Logo de marcador de posición (reemplázalo con <Image /> de tu logo) */}
+          {/* Logo */}
           <div className="flex justify-center mb-6">
-            <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-blue-600/30">
-              R
-            </div>
+            <Image
+              src="/Logo.png"
+              alt="RikiTechHD"
+              width={56}
+              height={56}
+              className="rounded-xl"
+            />
           </div>
 
           {/* Título y subtítulo */}
@@ -177,42 +199,132 @@ function DownloadGate() {
             )}
           </div>
 
-          {/* Info inferior: destino + contador de descargas */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-neutral-600">
-            <span className="truncate max-w-full">
-              Destino:{" "}
-              <span className="text-neutral-400">
-                {getDomain(rawUrl) || "—"}
-              </span>
-            </span>
-            <span className="shrink-0">
-              🔒 {formatNumber(FAKE_TODAY_DOWNLOADS)} descargas hoy
-            </span>
-          </div>
+          {/* Redes sociales destacadas */}
+            <div className="mt-8 pt-6 border-t border-neutral-900">
+              <p className="text-center text-xs text-neutral-500 mb-3">
+                Síguenos para más contenido
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                {/* Facebook */}
+                <a
+                  href="https://facebook.com/rikitech"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Facebook"
+                  className="flex flex-col items-center gap-1.5 group"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-[#1877F2]/10 text-[#1877F2] group-hover:bg-[#1877F2] group-hover:text-white flex items-center justify-center transition-all duration-200 group-hover:scale-110 shadow-sm">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                      <path d="M22 12.07C22 6.5 17.52 2 12 2S2 6.5 2 12.07C2 17.1 5.66 21.25 10.44 22v-7.03H7.9v-2.9h2.54V9.85c0-2.51 1.5-3.9 3.78-3.9 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.9h2.78l-.44 2.9h-2.34V22C18.34 21.25 22 17.1 22 12.07z" />
+                    </svg>
+                  </div>
+                </a>
+
+                {/* X */}
+                <a
+                  href="https://x.com/rikitechhd"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="X (Twitter)"
+                  className="flex flex-col items-center gap-1.5 group"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-neutral-800 text-neutral-300 group-hover:bg-black group-hover:text-white flex items-center justify-center transition-all duration-200 group-hover:scale-110 shadow-sm border border-neutral-800">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
+                    </svg>
+                  </div>
+                </a>
+
+                {/* YouTube */}
+                <a
+                  href="https://youtube.com/@rikitechhd"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="YouTube"
+                  className="flex flex-col items-center gap-1.5 group"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-[#FF0000]/10 text-[#FF0000] group-hover:bg-[#FF0000] group-hover:text-white flex items-center justify-center transition-all duration-200 group-hover:scale-110 shadow-sm">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                      <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1c.5-1.9.5-5.8.5-5.8s0-3.9-.5-5.8zM9.6 15.6V8.4l6.2 3.6-6.2 3.6z" />
+                    </svg>
+                  </div>
+                </a>
+
+                {/* Telegram */}
+                <a
+                  href="https://t.me/rikitechhd"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Telegram"
+                  className="flex flex-col items-center gap-1.5 group"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-[#24A1DE]/10 text-[#24A1DE] group-hover:bg-[#24A1DE] group-hover:text-white flex items-center justify-center transition-all duration-200 group-hover:scale-110 shadow-sm">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                      <path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.16l-1.97 9.29c-.15.66-.54.82-1.09.51l-3.02-2.23-1.46 1.41c-.16.16-.3.3-.61.3l.22-3.08 5.61-5.07c.24-.22-.05-.34-.38-.13l-6.93 4.36-2.98-.93c-.65-.2-.66-.65.14-.96l11.66-4.49c.54-.2 1.01.13.82 1.02z" />
+                    </svg>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+         
         </div>
       </section>
 
       {/* ======================= ANUNCIOS ======================= */}
-      <section className="w-full max-w-4xl mx-auto px-4 pb-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <section className="w-full max-w-md mx-auto px-4 pb-8 space-y-4">
+          {/* Anuncio 1: Native Banner (arriba) */}
           <AdPlaceholder
-            label="Anuncio 1 — reemplazar con Adsterra / Monetag"
-            className="h-24 sm:h-28"
+            html={`
+              <script async="async" data-cfasync="false" src="https://pl31767627.profitableratecpmnetwork.com/4c4c564fe15ccb1e3c16319487c38cd6/invoke.js"></script>
+                <div id="container-4c4c564fe15ccb1e3c16319487c38cd6"></div>
+            `}
+            className="min-h-[90px]"
           />
-          <AdPlaceholder
-            label="Anuncio 2 — reemplazar con Adsterra / Monetag"
-            className="h-24 sm:h-28"
-          />
-          <AdPlaceholder
-            label="Anuncio 3 — reemplazar con Adsterra / Monetag"
-            className="h-24 sm:h-28"
-          />
-          <AdPlaceholder
-            label="Anuncio 4 — reemplazar con Adsterra / Monetag"
-            className="h-24 sm:h-28"
-          />
-        </div>
-      </section>
+
+          {/* Anuncio 2: Banner 728x90 (Desktop) / 320x50 (Móvil) */}
+          <div className="hidden sm:block">
+            <AdPlaceholder
+              html={`
+                <script>
+                atOptions = {
+                  'key' : '3f3848307050e98545d969ecca6d3955',
+                  'format' : 'iframe',
+                  'height' : 90,
+                  'width' : 728,
+                  'params' : {}
+                };
+              </script>
+              <script src="https://www.highrevenueformat.com/3f3848307050e98545d969ecca6d3955/invoke.js"></script>
+              `}
+              className="min-h-[90px]"
+            />
+          </div>
+          <div className="block sm:hidden">
+            <AdPlaceholder
+              html={`
+                <!-- 👇 PEGA AQUÍ EL CÓDIGO DEL BANNER 320x50 -->
+              `}
+              className="min-h-[50px]"
+            />
+          </div>
+
+          {/* Anuncios 3 y 4: dos banners 300x250 lado a lado */}
+          <div className="grid grid-cols-2 gap-4">
+            <AdPlaceholder
+              html={`
+                <!-- 👇 PEGA AQUÍ EL CÓDIGO DEL BANNER 300x250 #1 -->
+              `}
+              className="min-h-[250px]"
+            />
+            <AdPlaceholder
+              html={`
+                <!-- 👇 PEGA AQUÍ EL CÓDIGO DEL BANNER 300x250 #2 -->
+              `}
+              className="min-h-[250px]"
+            />
+          </div>
+        </section>
 
       {/* ======================= POSTS INTERESANTES ======================= */}
       <InterestingPosts />
