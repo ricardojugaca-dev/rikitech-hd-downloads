@@ -42,6 +42,8 @@ function DownloadGate() {
   const [total, setTotal] = useState(FULL_DURATION);
   const [remaining, setRemaining] = useState(FULL_DURATION);
   const [done, setDone] = useState(false);
+  // Dentro de DownloadGate, junto a los otros useState
+  const [adShown, setAdShown] = useState(false);
 
   // --- 1. Validación inicial + duración dinámica ---
   useEffect(() => {
@@ -93,14 +95,29 @@ function DownloadGate() {
     }, [ready, invalid, done, remaining]);
 
     // --- 3. Acción del botón "Continuar" ---
-      const handleContinue = useCallback(() => {
-      // En modo desarrollo sin URL, mostramos una alerta
-      if (!rawUrl) {
-        alert("🧪 Modo desarrollo: aquí iría la URL real de descarga.");
-        return;
-      }
+    const handleContinue = useCallback(() => {
+    // Si no hay URL, es un aviso de desarrollo (puedes mantenerlo o quitarlo)
+    if (!rawUrl) {
+      alert("🧪 Modo desarrollo: aquí iría la URL real de descarga.");
+      return;
+    }
+
+    // --- LÓGICA DEL SMARTLINK ---
+    // 1. Comprobar si el usuario ya vio el anuncio
+    if (!adShown) {
+      // Si no lo ha visto, abrimos el Smartlink en una nueva pestaña
+      window.open(
+        "https://www.profitableratecpmnetwork.com/n0adkqn7bs?key=d847a81a7f48e292e9973f452ba11520",
+        "_blank"
+      );
+      
+      // 2. Cambiamos el estado para que el próximo clic SÍ redirija
+      setAdShown(true);
+    } else {
+      // Si ya vio el anuncio, redirigimos a su destino final (Techpaste)
       window.location.href = rawUrl;
-    }, [rawUrl]);
+    }
+  }, [rawUrl, adShown]); // Añadimos adShown a las dependencias
 
   // --- 4. Render: URL inválida ---
   if (invalid) {  
