@@ -1,16 +1,6 @@
 "use client";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
-
-// =============================================================
-// Página principal de la puerta de descarga
-// Flujo:
-//   1. Lee ?url= de la query string
-//   2. Valida que sea un dominio permitido
-//   3. Muestra cuenta regresiva de 10s (o 3s si ya visitó antes)
-//   4. Al terminar, muestra el botón "Continuar a la descarga"
-// =============================================================
-
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -24,17 +14,24 @@ import {
   isValidDownloadUrl,
 } from "@/lib/utils";
 
-// Duración normal y duración reducida si el usuario ya pasó por aquí
 const FULL_DURATION = 10;
-const SHORT_DURATION = 3;
 
-
-// -------------------------------------------------------------
-// Componente interno (usa useSearchParams → necesita Suspense)
-// -------------------------------------------------------------
 function DownloadGate() {
   const searchParams = useSearchParams();
-  const rawUrl = searchParams.get("url");
+  // 1. Intentamos obtener la URL de useSearchParams
+  let rawUrl = searchParams.get("url");
+
+  // 2. Si no la encuentra (en Cloudflare estático), la leemos del navegador
+  const [browserUrl, setBrowserUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!rawUrl) {
+      const params = new URLSearchParams(window.location.search);
+      setBrowserUrl(params.get("url"));
+    }
+  }, [rawUrl]);
+
+  // Usamos la URL del navegador si la de useSearchParams es null
+  const finalUrl = rawUrl || browserUrl;
 
   // Estados
   const [ready, setReady] = useState(false);
@@ -42,26 +39,37 @@ function DownloadGate() {
   const [total, setTotal] = useState(FULL_DURATION);
   const [remaining, setRemaining] = useState(FULL_DURATION);
   const [done, setDone] = useState(false);
-  // Dentro de DownloadGate, junto a los otros useState
   const [adShown, setAdShown] = useState(false);
 
-  // --- 1. Validación inicial + duración dinámica ---
+  // --- 1. Validación inicial ---
   useEffect(() => {
-    // 🧪 MODO DESARROLLO: si estamos en local sin ?url=, usamos una URL de prueba
+    // Si aún no tenemos la URL del navegador, esperamos
+    if (finalUrl === null && typeof window !== "undefined") {
+        // Damos un pequeño margen para que el useEffect del browserUrl se ejecute
+        const timer = setTimeout(() => {
+            // Si después de 500ms sigue null, forzamos ready en local
+            const isDev = window.location.hostname === "localhost";
+            if (isDev) {
+                setTotal(FULL_DURATION);
+                setRemaining(FULL_DURATION);
+                setReady(true);
+            } else {
+                setInvalid(true);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }
+
     const isDev = typeof window !== "undefined" && window.location.hostname === "localhost";
 
-    // Siempre 10 segundos
-    const duration = FULL_DURATION;
-
-    if (!rawUrl && isDev) {
-      setTotal(duration);
-      setRemaining(duration);
+    if (!finalUrl && isDev) {
+      setTotal(FULL_DURATION);
+      setRemaining(FULL_DURATION);
       setReady(true);
       return;
     }
 
-    // Si la URL no es válida o no está permitida → redirigimos al sitio principal
-    if (!isValidDownloadUrl(rawUrl)) {
+    if (finalUrl && !isValidDownloadUrl(finalUrl)) {
       setInvalid(true);
       const t = setTimeout(() => {
         window.location.replace(MAIN_SITE_URL);
@@ -69,55 +77,49 @@ function DownloadGate() {
       return () => clearTimeout(t);
     }
 
-    setTotal(duration);
-    setRemaining(duration);
-    setReady(true);
-  }, [rawUrl]);
+    if (finalUrl && isValidDownloadUrl(finalUrl)) {
+      setTotal(FULL_DURATION);
+      setRemaining(FULL_DURATION);
+      setReady(true);
+    }
+  }, [finalUrl]);
 
-    // --- 2. Lógica de la cuenta regresiva ---
-    useEffect(() => {
-      if (!ready || invalid || done) return;
+  // --- 2. Lógica de la cuenta regresiva ---
+  useEffect(() => {
+    if (!ready || invalid || done) return;
 
-      if (remaining <= 0) {
-        setDone(true);
-        // Marcamos al usuario como "ya visitó" para futuras visitas
-        try {
-          localStorage.setItem(VISITED_KEY, "1");
-        } catch {}
-        return;
-      }
+    if (remaining <= 0) {
+      setDone(true);
+      try {
+        localStorage.setItem(VISITED_KEY, "1");
+      } catch {}
+      return;
+    }
 
-      const timer = setTimeout(() => {
-        setRemaining((r) => r - 1);
-      }, 1000);
+    const timer = setTimeout(() => {
+      setRemaining((r) => r - 1);
+    }, 1000);
 
-      return () => clearTimeout(timer);
-    }, [ready, invalid, done, remaining]);
+    return () => clearTimeout(timer);
+  }, [ready, invalid, done, remaining]);
 
-    // --- 3. Acción del botón "Continuar" ---
-    const handleContinue = useCallback(() => {
-    // Si no hay URL, es un aviso de desarrollo (puedes mantenerlo o quitarlo)
-    if (!rawUrl) {
+  // --- 3. Acción del botón "Continuar" ---
+  const handleContinue = useCallback(() => {
+    if (!finalUrl) {
       alert("🧪 Modo desarrollo: aquí iría la URL real de descarga.");
       return;
     }
 
-    // --- LÓGICA DEL SMARTLINK ---
-    // 1. Comprobar si el usuario ya vio el anuncio
     if (!adShown) {
-      // Si no lo ha visto, abrimos el Smartlink en una nueva pestaña
       window.open(
         "https://www.profitableratecpmnetwork.com/n0adkqn7bs?key=d847a81a7f48e292e9973f452ba11520",
         "_blank"
       );
-      
-      // 2. Cambiamos el estado para que el próximo clic SÍ redirija
       setAdShown(true);
     } else {
-      // Si ya vio el anuncio, redirigimos a su destino final (Techpaste)
-      window.location.href = rawUrl;
+      window.location.href = finalUrl;
     }
-  }, [rawUrl, adShown]); // Añadimos adShown a las dependencias
+  }, [finalUrl, adShown]);
 
   // --- 4. Render: URL inválida ---
   if (invalid) {  
@@ -143,10 +145,8 @@ function DownloadGate() {
   return (
     <main className="min-h-screen flex flex-col">
      <Navbar />
-      {/* ======================= TARJETA CENTRAL ======================= */}
       <section className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-xl rounded-2xl border border-neutral-800 bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900 p-6 sm:p-10 shadow-2xl shadow-black/40">
-         {/* Logo con círculo blanco compacto */}
             <div className="flex justify-center mb-6">
               <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-md shadow-blue-600/20">
                 <Image
@@ -159,7 +159,6 @@ function DownloadGate() {
               </div>
             </div>
 
-          {/* Título y subtítulo */}
           <h1 className="text-center text-2xl sm:text-3xl font-semibold text-white mb-2">
             {done ? "¡Enlace listo!" : "Preparando tu descarga"}
           </h1>
@@ -169,7 +168,6 @@ function DownloadGate() {
               : "Estamos generando tu enlace seguro. Espera un momento."}
           </p>
 
-          {/* Zona central: círculo o botón */}
           <div className="flex flex-col items-center gap-6 min-h-[240px] justify-center">
             {!done && ready ? (
               <>
@@ -181,10 +179,8 @@ function DownloadGate() {
                 </p>
               </>
             ) : !ready ? (
-              // Esqueleto mientras validamos (evita parpadeo)
               <div className="w-[200px] h-[200px] rounded-full border-8 border-neutral-800 animate-pulse" />
             ) : (
-              // Botón "Continuar"
               <button
                 type="button"
                 onClick={handleContinue}
@@ -206,173 +202,56 @@ function DownloadGate() {
             )}
           </div>
 
-          {/* Redes sociales destacadas */}
             <div className="mt-8 pt-6 border-t border-neutral-900">
               <p className="text-center text-xs text-neutral-500 mb-3">
                 Síguenos para más contenido
               </p>
               <div className="flex items-center justify-center gap-3">
-                {/* Facebook */}
-                <a
-                  href="https://facebook.com/rikitech"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Facebook"
-                  className="flex flex-col items-center gap-1.5 group"
-                >
+                <a href="https://facebook.com/rikitech" target="_blank" rel="noopener noreferrer" title="Facebook" className="flex flex-col items-center gap-1.5 group">
                   <div className="w-11 h-11 rounded-xl bg-[#1877F2]/10 text-[#1877F2] group-hover:bg-[#1877F2] group-hover:text-white flex items-center justify-center transition-all duration-200 group-hover:scale-110 shadow-sm">
-                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                      <path d="M22 12.07C22 6.5 17.52 2 12 2S2 6.5 2 12.07C2 17.1 5.66 21.25 10.44 22v-7.03H7.9v-2.9h2.54V9.85c0-2.51 1.5-3.9 3.78-3.9 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.9h2.78l-.44 2.9h-2.34V22C18.34 21.25 22 17.1 22 12.07z" />
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M22 12.07C22 6.5 17.52 2 12 2S2 6.5 2 12.07C2 17.1 5.66 21.25 10.44 22v-7.03H7.9v-2.9h2.54V9.85c0-2.51 1.5-3.9 3.78-3.9 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.9h2.78l-.44 2.9h-2.34V22C18.34 21.25 22 17.1 22 12.07z" /></svg>
                   </div>
                 </a>
-
-                {/* X */}
-                <a
-                  href="https://x.com/rikitechhd"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="X (Twitter)"
-                  className="flex flex-col items-center gap-1.5 group"
-                >
+                <a href="https://x.com/rikitechhd" target="_blank" rel="noopener noreferrer" title="X (Twitter)" className="flex flex-col items-center gap-1.5 group">
                   <div className="w-11 h-11 rounded-xl bg-neutral-800 text-neutral-300 group-hover:bg-black group-hover:text-white flex items-center justify-center transition-all duration-200 group-hover:scale-110 shadow-sm border border-neutral-800">
-                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" /></svg>
                   </div>
                 </a>
-
-                {/* YouTube */}
-                <a
-                  href="https://youtube.com/@rikitechhd"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="YouTube"
-                  className="flex flex-col items-center gap-1.5 group"
-                >
+                <a href="https://youtube.com/@rikitechhd" target="_blank" rel="noopener noreferrer" title="YouTube" className="flex flex-col items-center gap-1.5 group">
                   <div className="w-11 h-11 rounded-xl bg-[#FF0000]/10 text-[#FF0000] group-hover:bg-[#FF0000] group-hover:text-white flex items-center justify-center transition-all duration-200 group-hover:scale-110 shadow-sm">
-                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                      <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1c.5-1.9.5-5.8.5-5.8s0-3.9-.5-5.8zM9.6 15.6V8.4l6.2 3.6-6.2 3.6z" />
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1c.5-1.9.5-5.8.5-5.8s0-3.9-.5-5.8zM9.6 15.6V8.4l6.2 3.6-6.2 3.6z" /></svg>
                   </div>
                 </a>
-
-                {/* Telegram */}
-                <a
-                  href="https://t.me/rikitechhd"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Telegram"
-                  className="flex flex-col items-center gap-1.5 group"
-                >
+                <a href="https://t.me/rikitechhd" target="_blank" rel="noopener noreferrer" title="Telegram" className="flex flex-col items-center gap-1.5 group">
                   <div className="w-11 h-11 rounded-xl bg-[#24A1DE]/10 text-[#24A1DE] group-hover:bg-[#24A1DE] group-hover:text-white flex items-center justify-center transition-all duration-200 group-hover:scale-110 shadow-sm">
-                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                      <path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.16l-1.97 9.29c-.15.66-.54.82-1.09.51l-3.02-2.23-1.46 1.41c-.16.16-.3.3-.61.3l.22-3.08 5.61-5.07c.24-.22-.05-.34-.38-.13l-6.93 4.36-2.98-.93c-.65-.2-.66-.65.14-.96l11.66-4.49c.54-.2 1.01.13.82 1.02z" />
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.16l-1.97 9.29c-.15.66-.54.82-1.09.51l-3.02-2.23-1.46 1.41c-.16.16-.3.3-.61.3l.22-3.08 5.61-5.07c.24-.22-.05-.34-.38-.13l-6.93 4.36-2.98-.93c-.65-.2-.66-.65.14-.96l11.66-4.49c.54-.2 1.01.13.82 1.02z" /></svg>
                   </div>
                 </a>
               </div>
             </div>
-
-         
         </div>
       </section>
 
-      {/* ======================= ANUNCIOS ======================= */}
         <section className="w-full max-w-4xl mx-auto px-4 pb-8 space-y-4">
-          {/* Anuncio 1: Native Banner */}
-          <AdPlaceholder
-            html={`
-              <script async="async" data-cfasync="false" src="https://pl31767627.profitableratecpmnetwork.com/4c4c564fe15ccb1e3c16319487c38cd6/invoke.js"></script>
-              <div id="container-4c4c564fe15ccb1e3c16319487c38cd6"></div>
-            `}
-            className="min-h-[100px]"
-          />
-
-          {/* Anuncio 2: Banner 728x90 (Desktop) / 320x50 (Móvil) */}
+          <AdPlaceholder html={`<script async="async" data-cfasync="false" src="https://pl31767627.profitableratecpmnetwork.com/4c4c564fe15ccb1e3c16319487c38cd6/invoke.js"></script><div id="container-4c4c564fe15ccb1e3c16319487c38cd6"></div>`} className="min-h-[100px]" />
           <div className="hidden sm:block">
-            <AdPlaceholder
-              html={`
-                <script>
-                  atOptions = {
-                    'key' : '3f3848307050e98545d969ecca6d3955',
-                    'format' : 'iframe',
-                    'height' : 90,
-                    'width' : 728,
-                    'params' : {}
-                  };
-                </script>
-                <script src="https://www.highrevenueformat.com/3f3848307050e98545d969ecca6d3955/invoke.js"></script>
-              `}
-              className="min-h-[90px]"
-            />
+            <AdPlaceholder html={`<script>atOptions = {'key' : '3f3848307050e98545d969ecca6d3955','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script><script src="https://www.highrevenueformat.com/3f3848307050e98545d969ecca6d3955/invoke.js"></script>`} className="min-h-[90px]" />
           </div>
           <div className="block sm:hidden">
-            <AdPlaceholder
-              html={`
-                <script>
-                  atOptions = {
-                    'key' : 'bdd3f78d6ea8e4fac01ff84746cc3b15',
-                    'format' : 'iframe',
-                    'height' : 50,
-                    'width' : 320,
-                    'params' : {}
-                  };
-                </script>
-                <script src="https://www.highrevenueformat.com/bdd3f78d6ea8e4fac01ff84746cc3b15/invoke.js"></script>
-              `}
-              className="min-h-[50px]"
-            />
+            <AdPlaceholder html={`<script>atOptions = {'key' : 'bdd3f78d6ea8e4fac01ff84746cc3b15','format' : 'iframe','height' : 50,'width' : 320,'params' : {}};</script><script src="https://www.highrevenueformat.com/bdd3f78d6ea8e4fac01ff84746cc3b15/invoke.js"></script>`} className="min-h-[50px]" />
           </div>
-
-          {/* Anuncios 3 y 4: dos banners 300x250 (uno por fila en móvil) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <AdPlaceholder
-              html={`
-                <script>
-                  atOptions = {
-                    'key' : '80ec449e7c42aa2311e02cf68e5c6c32',
-                    'format' : 'iframe',
-                    'height' : 250,
-                    'width' : 300,
-                    'params' : {}
-                  };
-                </script>
-                <script src="https://www.highrevenueformat.com/80ec449e7c42aa2311e02cf68e5c6c32/invoke.js"></script>
-              `}
-              className="min-h-[250px]"
-            />
-            <AdPlaceholder
-              html={`
-                <script>
-                  atOptions = {
-                    'key' : '80ec449e7c42aa2311e02cf68e5c6c32',
-                    'format' : 'iframe',
-                    'height' : 250,
-                    'width' : 300,
-                    'params' : {}
-                  };
-                </script>
-                <script src="https://www.highrevenueformat.com/80ec449e7c42aa2311e02cf68e5c6c32/invoke.js"></script>
-              `}
-              className="min-h-[250px]"
-            />
+            <AdPlaceholder html={`<script>atOptions = {'key' : '80ec449e7c42aa2311e02cf68e5c6c32','format' : 'iframe','height' : 250,'width' : 300,'params' : {}};</script><script src="https://www.highrevenueformat.com/80ec449e7c42aa2311e02cf68e5c6c32/invoke.js"></script>`} className="min-h-[250px]" />
+            <AdPlaceholder html={`<script>atOptions = {'key' : '80ec449e7c42aa2311e02cf68e5c6c32','format' : 'iframe','height' : 250,'width' : 300,'params' : {}};</script><script src="https://www.highrevenueformat.com/80ec449e7c42aa2311e02cf68e5c6c32/invoke.js"></script>`} className="min-h-[250px]" />
           </div>
         </section>
 
-      {/* ======================= POSTS INTERESANTES ======================= */}
       <InterestingPosts />
-
-      {/* ======================= PIE DE PÁGINA ======================= */}
       <Footer />
     </main>
   );
 }
 
-// -------------------------------------------------------------
-// Export por defecto: envoltorio con Suspense (requerido por
-// useSearchParams en el App Router)
-// -------------------------------------------------------------
 export default function Page() {
   return (
     <Suspense
