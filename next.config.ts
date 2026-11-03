@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
-// Configuración mínima de Next.js.
-// Si más adelante necesitas cabeceras de seguridad, rewrites, etc., se añaden aquí.
 const nextConfig: NextConfig = {
+  // ESTA ES LA LÍNEA MÁGICA PARA CLOUDFLARE PAGES
+  output: 'export',
+  
   // Evita que Next intente optimizar imágenes externas por ahora.
   images: {
     remotePatterns: [],
