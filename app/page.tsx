@@ -18,20 +18,7 @@ const FULL_DURATION = 10;
 
 function DownloadGate() {
   const searchParams = useSearchParams();
-  // 1. Intentamos obtener la URL de useSearchParams
-  let rawUrl = searchParams.get("url");
-
-  // 2. Si no la encuentra (en Cloudflare estático), la leemos del navegador
-  const [browserUrl, setBrowserUrl] = useState<string | null>(null);
-  useEffect(() => {
-    if (!rawUrl) {
-      const params = new URLSearchParams(window.location.search);
-      setBrowserUrl(params.get("url"));
-    }
-  }, [rawUrl]);
-
-  // Usamos la URL del navegador si la de useSearchParams es null
-  const finalUrl = rawUrl || browserUrl;
+  const rawUrl = searchParams.get("url");
 
   // Estados
   const [ready, setReady] = useState(false);
@@ -43,46 +30,44 @@ function DownloadGate() {
 
   // --- 1. Validación inicial ---
   useEffect(() => {
-    // Si aún no tenemos la URL del navegador, esperamos
-    if (finalUrl === null && typeof window !== "undefined") {
-        // Damos un pequeño margen para que el useEffect del browserUrl se ejecute
-        const timer = setTimeout(() => {
-            // Si después de 500ms sigue null, forzamos ready en local
-            const isDev = window.location.hostname === "localhost";
-            if (isDev) {
-                setTotal(FULL_DURATION);
-                setRemaining(FULL_DURATION);
-                setReady(true);
-            } else {
-                setInvalid(true);
-            }
-        }, 500);
-        return () => clearTimeout(timer);
-    }
-
+    // 🧪 MODO DESARROLLO: si estamos en local sin ?url=, arrancamos igual
     const isDev = typeof window !== "undefined" && window.location.hostname === "localhost";
 
-    if (!finalUrl && isDev) {
+    // Si estamos en local y NO hay URL, arrancamos para probar
+    if (isDev && !rawUrl) {
       setTotal(FULL_DURATION);
       setRemaining(FULL_DURATION);
       setReady(true);
       return;
     }
 
-    if (finalUrl && !isValidDownloadUrl(finalUrl)) {
-      setInvalid(true);
-      const t = setTimeout(() => {
-        window.location.replace(MAIN_SITE_URL);
-      }, 2000);
-      return () => clearTimeout(t);
+    // Si NO estamos en local y NO hay URL, esperamos un momento
+    // (por si useSearchParams tarda en hidratar)
+    if (!isDev && !rawUrl) {
+        // Damos un margen de 1 segundo. Si después de eso sigue sin URL,
+        // entonces sí es un error real.
+        const timer = setTimeout(() => {
+            setInvalid(true);
+        }, 1000);
+        return () => clearTimeout(timer);
     }
 
-    if (finalUrl && isValidDownloadUrl(finalUrl)) {
-      setTotal(FULL_DURATION);
-      setRemaining(FULL_DURATION);
-      setReady(true);
+    // Si HAY URL, validamos
+    if (rawUrl) {
+        if (!isValidDownloadUrl(rawUrl)) {
+            setInvalid(true);
+            const t = setTimeout(() => {
+                window.location.replace(MAIN_SITE_URL);
+            }, 2000);
+            return () => clearTimeout(t);
+        }
+
+        // URL válida, arrancamos el contador
+        setTotal(FULL_DURATION);
+        setRemaining(FULL_DURATION);
+        setReady(true);
     }
-  }, [finalUrl]);
+  }, [rawUrl]);
 
   // --- 2. Lógica de la cuenta regresiva ---
   useEffect(() => {
@@ -105,7 +90,7 @@ function DownloadGate() {
 
   // --- 3. Acción del botón "Continuar" ---
   const handleContinue = useCallback(() => {
-    if (!finalUrl) {
+    if (!rawUrl) {
       alert("🧪 Modo desarrollo: aquí iría la URL real de descarga.");
       return;
     }
@@ -117,12 +102,12 @@ function DownloadGate() {
       );
       setAdShown(true);
     } else {
-      window.location.href = finalUrl;
+      window.location.href = rawUrl;
     }
-  }, [finalUrl, adShown]);
+  }, [rawUrl, adShown]);
 
   // --- 4. Render: URL inválida ---
-  if (invalid) {  
+  if (invalid) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center max-w-sm">
@@ -144,7 +129,7 @@ function DownloadGate() {
   // --- 5. Render principal ---
   return (
     <main className="min-h-screen flex flex-col">
-     <Navbar />
+      <Navbar />
       <section className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-xl rounded-2xl border border-neutral-800 bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900 p-6 sm:p-10 shadow-2xl shadow-black/40">
             <div className="flex justify-center mb-6">
