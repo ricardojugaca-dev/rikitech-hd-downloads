@@ -26,6 +26,8 @@ export const ALLOWED_DOMAINS: string[] = [
   "anonfiles.com",
   "solidfiles.com",
   "infinityfree.me",   // 👈 AÑADE ESTA LÍNEA
+  "techpaste-production.up.railway.app", // <-- AGREGA ESTA LÍNEA
+
 ];
 
 /**
